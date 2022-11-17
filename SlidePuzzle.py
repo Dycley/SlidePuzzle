@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 # @Author: YokDen
-# @Time: 2022/9/13
+# @Time: 2022/10/18
 # @Email: dyk_693@qq.com
 
 # Form implementation generated from reading ui file 'SlidePuzzle.ui'
