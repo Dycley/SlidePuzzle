@@ -25,11 +25,11 @@ import selectbox
 
 class Ui_SlidePuzzle(object):
     def __init__(self):
-        self.selectbox = selectbox.SelectBox()
-        self.selectbox.setWindowModality(Qt.ApplicationModal)
-        self.imagebox = imagebox.ImageBox()
+        self.selectbox = selectbox.SelectBox()                      # 初始化选择框
+        self.selectbox.setWindowModality(Qt.ApplicationModal)       # 设置选择框出现时阻塞主窗体运行
+        self.imagebox = imagebox.ImageBox()                         # 初始化图片框
         # self.imagebox.setWindowModality(Qt.ApplicationModal)
-        self.backmusic = QSound("music/backmusic.wav")
+        self.backmusic = QSound("music/backmusic.wav")              # 初始化背景音乐
         self.backmusic.setLoops(QSound.Infinite)
         self.play_music()
 
@@ -138,6 +138,7 @@ class Ui_SlidePuzzle(object):
         self.retranslateUi(SlidePuzzle)
         QtCore.QMetaObject.connectSlotsByName(SlidePuzzle)
 
+        # 实例化拼图对象
         self.puzzle = Puzzle(self.gridLayout, self.selectbox, self.imagebox, self.label_time, self.pushButton_watch_img)
         self.pushButton_watch_img.hide()
         self.connecter()
@@ -166,7 +167,7 @@ class Ui_SlidePuzzle(object):
         self.actionabout.triggered.connect(self.about)
         self.actionhelp.triggered.connect(self.help)
 
-    def play_music(self):
+    def play_music(self):        # 背景音乐控制
         if self.selectbox.checkBox.isChecked():
             self.backmusic.play()
         else:
@@ -182,7 +183,7 @@ class Ui_SlidePuzzle(object):
         widget.setWindowIcon(QIcon("images/help.png"))
         QMessageBox.about(widget, "帮助", "玩法：\n游戏开始后，你需要点击这些拼图来移动它们，使他们恢复原样")
 
-class PuzzlePart(QtWidgets.QPushButton):
+class PuzzlePart(QtWidgets.QPushButton):    # 拼图块类
     def __init__(self):
         super(PuzzlePart, self).__init__()
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Expanding)
@@ -195,38 +196,38 @@ class PuzzlePart(QtWidgets.QPushButton):
         font.setBold(True)
         font.setWeight(75)
         self.setFont(font)
-        self.id = -1
-        self.pos = -1
-        self.clicked.connect(self.write_id)
+        self.id = -1            # 拼图块id，作为其标识
+        self.pos = -1           # 拼图块位置id，标明其位置
+        self.clicked.connect(self.write_id)     # 拼图块被单击时，拼图的now_id发生改变
 
     def write_id(self):
         Puzzle.now_id = self.id
 
 
-class Puzzle:
-    group = []
-    img_group = []
-    now_id = -1
-    space_id = -1
+class Puzzle:                       # 拼图类
+    group = []                      # 拼图包含的拼图块
+    img_group = []                  # 分割后图片组
+    now_id = -1                     # 当前正在被单击的拼图块位置id
+    space_id = -1                   # 当前空格所在的位置id
 
     def __init__(self, gridlayout: QtWidgets.QGridLayout, select_box: selectbox.SelectBox, image_box: imagebox.ImageBox,
                  label_time: QtWidgets.QLabel, pub_watch_img: QtWidgets.QPushButton):
-        self.selectbox = select_box
+        self.selectbox = select_box                 #
         self.imagebox = image_box
         self.gridLayout = gridlayout
         self.label_time = label_time
         self.pushButton_watch_img = pub_watch_img
-        self.n = self.selectbox.spinBox.value()
-        self.img_path = ""
-        self.sound = QSound("music/sound.wav")
-        self.group_len = 0
-        self.status = 0
-        self.timer = QTimer()
-        self.time = 0
+        self.n = self.selectbox.spinBox.value()         # 获取选择框内设置的游戏难度（拼图阶数）
+        self.img_path = ""                              # 图片模式下，当前图片所在的路径
+        self.sound = QSound("music/sound.wav")          # 初始化按键音效
+        self.group_len = 0                              # 拼图块个数
+        self.status = 0                                 # 当前模式，0表示图块展示为数字，1表示为图片
+        self.timer = QTimer()                           # 计时
+        self.time = 0                                   # 游戏经过时间
         self.connecter()
         self.restart()
 
-    def connecter(self):
+    def connecter(self):                                # 关联信号与槽
         self.selectbox.radioButton_3.clicked.connect(self.change_status)
         self.selectbox.radioButton.clicked.connect(self.change_status)
         self.selectbox.radioButton_2.clicked.connect(self.change_status)
@@ -234,7 +235,7 @@ class Puzzle:
         self.pushButton_watch_img.clicked.connect(self.watch_img)
         self.timer.timeout.connect(self.show_time)
 
-    def restart(self):
+    def restart(self):                                 # 重设游戏
         self.n = self.selectbox.spinBox.value()
         self.group_len = self.n ** 2
         for part in self.group:
@@ -248,19 +249,19 @@ class Puzzle:
             for i in range(self.n):
                 for j in range(self.n):
                     self.img_group.append(
-                        self.img.copy(j * img_len, i * img_len, img_len, img_len).scaled(790 // self.n, 790 // self.n))
+                        self.img.copy(j * img_len, i * img_len, img_len, img_len).scaled(790//self.n, 790//self.n))
         for i in range(self.group_len):
             puzzlepart = PuzzlePart()
             self.group.append(puzzlepart)
             puzzlepart.id = i
             puzzlepart.pos = i
             puzzlepart.setIconSize(puzzlepart.size())
-            puzzlepart.clicked.connect(self.slide)
             self.set_surface(puzzlepart)
+            puzzlepart.clicked.connect(self.slide)
             self.set_pos(puzzlepart, i // self.n, i % self.n)
         self.new()
 
-    def new(self):
+    def new(self):                                  # 对棋盘进行随机排列
         num = self.group_len
         arr = random.sample(range(num), num)
         for i, j in enumerate(arr):
@@ -293,10 +294,10 @@ class Puzzle:
         self.label_time.setText("0")
         self.timer.stop()
 
-    def set_pos(self, puzzle_part, x, y):
+    def set_pos(self, puzzle_part, x, y):                     # 设置图片所在的相对位置
         self.gridLayout.addWidget(puzzle_part, x, y, 1, 1)
 
-    def slide(self):
+    def slide(self):                                          # 图块移动
         self.play_sound()
         if not self.timer.isActive():
             self.timer.start(1000)
@@ -314,7 +315,7 @@ class Puzzle:
             self.space_id = self.now_id
         self.check_win()
 
-    def check_win(self):
+    def check_win(self):                                     # 检查拼图是否恢复原样
         for i, part in enumerate(self.group):
             if part.pos != i:
                 return False
@@ -327,28 +328,28 @@ class Puzzle:
         QMessageBox.about(widget, "恭喜", f"你的用时是{self.time}秒")
         return True
 
-    def show_time(self):
+    def show_time(self):                                    # 更新游戏时间
         self.time += 1
         self.label_time.setText(str(self.time))
 
-    def set_surface(self, part: PuzzlePart):
+    def set_surface(self, part: PuzzlePart):                # 设置图块样式
         if self.status == 0:
             part.setText(str(part.pos + 1))
         else:
             part.setIcon(QIcon(self.img_group[part.pos]))
 
-    def play_sound(self):
+    def play_sound(self):                                   # 播放按键音效
         if self.selectbox.checkBox_2.isChecked():
             self.sound.play()
 
-    def watch_img(self):
+    def watch_img(self):                                    # 查看原图
         palette = QtGui.QPalette()
         palette.setBrush(self.imagebox.backgroundRole(), QBrush(
             self.img.scaled(self.imagebox.size(), QtCore.Qt.IgnoreAspectRatio, QtCore.Qt.SmoothTransformation)))
         self.imagebox.setPalette(palette)
         # self.imagebox.label.setPixmap(self.img)
 
-    def change_status(self):
+    def change_status(self):                                # 选择图块样式
         if self.selectbox.radioButton.isChecked():
             self.status = 0
             self.img_path = ""
